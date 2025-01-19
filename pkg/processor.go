@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"math"
 	"os"
+	"path/filepath"
 	"sort"
 	"testing"
 
@@ -457,16 +458,56 @@ func ConcatenateImagesHorizontally(inputPaths []string, outputPath string) error
 // GenerateTestImage creates a test image with random colored pixels.
 // It takes the output file path and the desired width and height of the image.
 // Returns an error if the operation fails.
-func GenerateTestImage(outputPath string, width, height int) error {
-	slog.Info("generating test image",
-		"output", outputPath,
-		"width", width,
-		"height", height)
+// GenerateTestImage creates various test images suitable for image processing tests.
+// It takes the output directory path and base dimensions.
+// Returns an error if any operation fails.
+func GenerateTestImage(outputDir string, width, height int) error {
+	slog.Info("generating test images",
+		"output_dir", outputDir,
+		"base_width", width,
+		"base_height", height)
 
-	// Create a new image
+	// Create output directory if it doesn't exist
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return &ErrInvalidOutput{Path: outputDir}
+	}
+
+	// Generate random noise image (for denoising test)
+	if err := generateNoiseImage(filepath.Join(outputDir, "noise_test.jpg"), width, height); err != nil {
+		return err
+	}
+
+	// Generate gradient image (for edge detection test)
+	if err := generateGradientImage(filepath.Join(outputDir, "gradient_test.jpg"), width, height); err != nil {
+		return err
+	}
+
+	// Generate binary pattern image (for binarization test)
+	if err := generateBinaryPatternImage(filepath.Join(outputDir, "binary_test.jpg"), width, height); err != nil {
+		return err
+	}
+
+	// Generate rotation test image
+	if err := generateRotationTestImage(filepath.Join(outputDir, "rotation_test.jpg"), width, height); err != nil {
+		return err
+	}
+
+	// Generate aspect ratio test images (for concatenation tests)
+	sizes := [][2]int{{width, height}, {width / 2, height}, {width, height / 2}}
+	for i, size := range sizes {
+		if err := generatePatternImage(
+			filepath.Join(outputDir, fmt.Sprintf("concat_test_%d.jpg", i+1)),
+			size[0], size[1], i); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// generateNoiseImage creates an image with random noise
+func generateNoiseImage(outputPath string, width, height int) error {
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
-
-	// Fill the image with random colors
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
 			img.Set(x, y, color.RGBA{
@@ -477,18 +518,130 @@ func GenerateTestImage(outputPath string, width, height int) error {
 			})
 		}
 	}
+	return saveJPEG(outputPath, img)
+}
 
-	// Create the output file
+// generateGradientImage creates an image with gradients for edge detection testing
+func generateGradientImage(outputPath string, width, height int) error {
+	img := image.NewRGBA(image.Rect(0, 0, width, height))
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			// Create horizontal gradient
+			if x < width/2 {
+				intensity := uint8(float64(x) / float64(width/2) * 255)
+				img.Set(x, y, color.RGBA{R: intensity, G: intensity, B: intensity, A: 255})
+			} else {
+				intensity := uint8(float64(width-x) / float64(width/2) * 255)
+				img.Set(x, y, color.RGBA{R: intensity, G: intensity, B: intensity, A: 255})
+			}
+		}
+	}
+	return saveJPEG(outputPath, img)
+}
+
+// generateBinaryPatternImage creates an image with clear black and white patterns
+func generateBinaryPatternImage(outputPath string, width, height int) error {
+	img := image.NewRGBA(image.Rect(0, 0, width, height))
+	blockSize := 20
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			// Create a checkered pattern
+			isWhite := ((x/blockSize)+(y/blockSize))%2 == 0
+			if isWhite {
+				img.Set(x, y, color.RGBA{R: 255, G: 255, B: 255, A: 255})
+			} else {
+				img.Set(x, y, color.RGBA{R: 0, G: 0, B: 0, A: 255})
+			}
+		}
+	}
+	return saveJPEG(outputPath, img)
+}
+
+// generateRotationTestImage creates an image with patterns that make rotation visible
+func generateRotationTestImage(outputPath string, width, height int) error {
+	img := image.NewRGBA(image.Rect(0, 0, width, height))
+	// Draw background
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			img.Set(x, y, color.RGBA{R: 255, G: 255, B: 255, A: 255})
+		}
+	}
+
+	// Draw arrows pointing in different directions
+	drawArrow(img, width/2, height/2, width/4, 0)   // Right
+	drawArrow(img, width/2, height/2, 0, height/4)  // Down
+	drawArrow(img, width/2, height/2, -width/4, 0)  // Left
+	drawArrow(img, width/2, height/2, 0, -height/4) // Up
+
+	return saveJPEG(outputPath, img)
+}
+
+// generatePatternImage creates an image with a distinct pattern and index number
+func generatePatternImage(outputPath string, width, height int, index int) error {
+	img := image.NewRGBA(image.Rect(0, 0, width, height))
+
+	// Create a unique color based on index
+	r := uint8((index * 90) % 256)
+	g := uint8((index * 60) % 256)
+	b := uint8((index * 30) % 256)
+
+	// Fill with pattern
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			if (x+y)%20 < 10 {
+				img.Set(x, y, color.RGBA{R: r, G: g, B: b, A: 255})
+			} else {
+				img.Set(x, y, color.RGBA{R: 255, G: 255, B: 255, A: 255})
+			}
+		}
+	}
+
+	return saveJPEG(outputPath, img)
+}
+
+// drawArrow draws an arrow on the image
+func drawArrow(img *image.RGBA, x, y, dx, dy int) {
+	// Draw arrow line
+	for i := 0; i < 20; i++ {
+		img.Set(x+dx*i/20, y+dy*i/20, color.RGBA{R: 0, G: 0, B: 0, A: 255})
+	}
+
+	// Draw arrow head
+	arrowSize := 10
+	if dx != 0 {
+		for i := -arrowSize; i <= arrowSize; i++ {
+			if dx > 0 {
+				img.Set(x+dx-i, y+i, color.RGBA{R: 0, G: 0, B: 0, A: 255})
+				img.Set(x+dx-i, y-i, color.RGBA{R: 0, G: 0, B: 0, A: 255})
+			} else {
+				img.Set(x+dx+i, y+i, color.RGBA{R: 0, G: 0, B: 0, A: 255})
+				img.Set(x+dx+i, y-i, color.RGBA{R: 0, G: 0, B: 0, A: 255})
+			}
+		}
+	}
+	if dy != 0 {
+		for i := -arrowSize; i <= arrowSize; i++ {
+			if dy > 0 {
+				img.Set(x+i, y+dy-i, color.RGBA{R: 0, G: 0, B: 0, A: 255})
+				img.Set(x-i, y+dy-i, color.RGBA{R: 0, G: 0, B: 0, A: 255})
+			} else {
+				img.Set(x+i, y+dy+i, color.RGBA{R: 0, G: 0, B: 0, A: 255})
+				img.Set(x-i, y+dy+i, color.RGBA{R: 0, G: 0, B: 0, A: 255})
+			}
+		}
+	}
+}
+
+// saveJPEG saves an image as JPEG
+func saveJPEG(outputPath string, img image.Image) error {
 	out, err := os.Create(outputPath)
 	if err != nil {
 		return &ErrInvalidOutput{Path: outputPath}
 	}
 	defer out.Close()
 
-	// Encode and save the image as JPEG
-	return jpeg.Encode(out, img, nil)
+	return jpeg.Encode(out, img, &jpeg.Options{Quality: cfg.JpegQuality})
 }
-
 func BenchmarkResizeImage(b *testing.B) {
 	inputPath := "../examples/input.jpg"
 	outputPath := "../examples/output_resized.jpg"

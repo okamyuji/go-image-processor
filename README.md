@@ -231,6 +231,97 @@ To redirect logs to a file, you can run the application like this:
 
 This will send all log output to `logfile.txt`.
 
+## How Each Image Processing Feature Works
+
+### Resize Image
+
+Have you ever needed to make a photo smaller or bigger? That's what our resize feature does!
+
+1. It takes your original image
+2. Keeps the same shape (like a rectangle stays a rectangle)
+3. Makes it bigger or smaller while keeping everything looking natural
+4. Saves the new sized image
+
+Example: Making a large 1000x1000 photo smaller to fit on your screen at 500x500.
+
+### Denoise Image (Remove Noise)
+
+Think of noise as tiny unwanted dots in your photo, like static on an old TV.
+
+1. The program looks at each part of the image
+2. For each spot, it checks the colors around it
+3. If it finds a dot that looks out of place, it smooths it out
+4. The result is a cleaner, clearer image
+
+Example: Making a grainy dark photo look smoother and clearer.
+
+### Rotate Image
+
+Just like turning a photo in your hands, this feature rotates your image.
+
+1. You tell it how many degrees to turn (like 90° for a quarter turn)
+2. It carefully moves each part of the image to its new position
+3. Makes sure nothing gets cut off
+4. Saves the turned image
+
+Example: Turning a sideways photo to make it upright.
+
+### Binarize Image (Black and White Conversion)
+
+This turns your image into just black and white - no gray areas!
+
+1. Looks at how bright each part of the image is
+2. Decides if each spot should be black or white
+3. Uses a smart method (called Otsu) to make the best choice
+4. Creates a clear black and white version
+
+Example: Making a color photo look like an old newspaper picture.
+
+### Concatenate Images
+
+This feature can join images together like puzzle pieces!
+
+Vertical Concatenation:
+
+1. Takes two or more images
+2. Stacks them on top of each other
+3. Makes sure they line up perfectly
+4. Creates one tall image
+
+Horizontal Concatenation:
+
+1. Takes two or more images
+2. Places them side by side
+3. Lines them up evenly
+4. Creates one wide image
+
+Example: Joining two holiday photos to make a panorama.
+
+### Edge Detection
+
+This feature finds and highlights the outlines in your image!
+
+1. Looks for places where colors change suddenly
+2. Marks these changes as edges
+3. Makes the edges stand out
+4. Creates an image showing just the outlines
+
+Example: Making a sketch-like version of a photo, showing just the main shapes.
+
+### Test Image Generation
+
+Need sample images to practice with? This feature creates them!
+
+1. Makes different types of test images
+2. Creates patterns that are perfect for testing
+3. Lets you choose the size
+4. Saves them as regular image files
+
+Example: Creating a checkerboard pattern to test image processing.
+
+---
+Remember: All these features keep your original image safe and create new files with the changes. It's like having a photo copy machine that can do magic tricks with your pictures! 🪄📸
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.

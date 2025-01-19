@@ -45,7 +45,7 @@ concathorz-example:
 	./${BINARY_NAME} concathorz examples/output_concat_horz.jpg examples/input1.jpg examples/input2.jpg
 
 generatetest-example:
-	./${BINARY_NAME} generatetest examples/test_image.jpg -width 200 -height 200
+	./${BINARY_NAME} generatetest examples -width 200 -height 200
 
 edges-example:
 	./${BINARY_NAME} edges examples/input.jpg examples/output_edges.jpg
