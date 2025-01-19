@@ -68,7 +68,10 @@ func main() {
 		resizeCmd := flag.NewFlagSet("resize", flag.ExitOnError)
 		width := resizeCmd.Int("width", 0, "Width to resize the image to")
 		height := resizeCmd.Int("height", 0, "Height to resize the image to")
-		resizeCmd.Parse(os.Args[2:])
+		if err := resizeCmd.Parse(os.Args[2:]); err != nil {
+			fmt.Println("Usage: go-image-processor resize <input> <output> -width <width> -height <height>")
+			os.Exit(1)
+		}
 
 		if resizeCmd.NArg() < 2 || *width == 0 || *height == 0 {
 			fmt.Println("Usage: go-image-processor resize <input> <output> -width <width> -height <height>")
@@ -83,7 +86,10 @@ func main() {
 
 	case "denoise":
 		denoiseCmd := flag.NewFlagSet("denoise", flag.ExitOnError)
-		denoiseCmd.Parse(os.Args[2:])
+		if err := denoiseCmd.Parse(os.Args[2:]); err != nil {
+			fmt.Println("Usage: go-image-processor denoise <input> <output>")
+			os.Exit(1)
+		}
 
 		if denoiseCmd.NArg() < 2 {
 			fmt.Println("Usage: go-image-processor denoise <input> <output>")
@@ -99,7 +105,10 @@ func main() {
 	case "rotate":
 		rotateCmd := flag.NewFlagSet("rotate", flag.ExitOnError)
 		angle := rotateCmd.Float64("angle", 0, "Angle to rotate the image by")
-		rotateCmd.Parse(os.Args[2:])
+		if err := rotateCmd.Parse(os.Args[2:]); err != nil {
+			fmt.Println("Usage: go-image-processor rotate <input> <output> -angle <angle>")
+			os.Exit(1)
+		}
 
 		if rotateCmd.NArg() < 2 || *angle == 0 {
 			fmt.Println("Usage: go-image-processor rotate <input> <output> -angle <angle>")
@@ -114,7 +123,10 @@ func main() {
 
 	case "binarize":
 		binarizeCmd := flag.NewFlagSet("binarize", flag.ExitOnError)
-		binarizeCmd.Parse(os.Args[2:])
+		if err := binarizeCmd.Parse(os.Args[2:]); err != nil {
+			fmt.Println("Usage: go-image-processor binarize <input> <output>")
+			os.Exit(1)
+		}
 
 		if binarizeCmd.NArg() < 2 {
 			fmt.Println("Usage: go-image-processor binarize <input> <output>")
@@ -129,7 +141,10 @@ func main() {
 
 	case "concatvert":
 		concatVertCmd := flag.NewFlagSet("concatvert", flag.ExitOnError)
-		concatVertCmd.Parse(os.Args[2:])
+		if err := concatVertCmd.Parse(os.Args[2:]); err != nil {
+			fmt.Println("Usage: go-image-processor concatvert <output> <input1> <input2> [input3...]")
+			os.Exit(1)
+		}
 
 		if concatVertCmd.NArg() < 3 {
 			fmt.Println("Usage: go-image-processor concatvert <output> <input1> <input2> [input3...]")
@@ -146,7 +161,10 @@ func main() {
 
 	case "concathorz":
 		concatHorzCmd := flag.NewFlagSet("concathorz", flag.ExitOnError)
-		concatHorzCmd.Parse(os.Args[2:])
+		if err := concatHorzCmd.Parse(os.Args[2:]); err != nil {
+			fmt.Println("Usage: go-image-processor concathorz <output> <input1> <input2> [input3...]")
+			os.Exit(1)
+		}
 
 		if concatHorzCmd.NArg() < 3 {
 			fmt.Println("Usage: go-image-processor concathorz <output> <input1> <input2> [input3...]")
@@ -165,7 +183,10 @@ func main() {
 		generateTestCmd := flag.NewFlagSet("generatetest", flag.ExitOnError)
 		width := generateTestCmd.Int("width", 100, "Width of the test image")
 		height := generateTestCmd.Int("height", 100, "Height of the test image")
-		generateTestCmd.Parse(os.Args[2:])
+		if err := generateTestCmd.Parse(os.Args[2:]); err != nil {
+			fmt.Println("Usage: go-image-processor generatetest <output> -width <width> -height <height>")
+			os.Exit(1)
+		}
 
 		if generateTestCmd.NArg() < 1 {
 			fmt.Println("Usage: go-image-processor generatetest <output> -width <width> -height <height>")
@@ -180,7 +201,10 @@ func main() {
 		fmt.Println("Test image generated successfully")
 	case "edges":
 		edgesCmd := flag.NewFlagSet("edges", flag.ExitOnError)
-		edgesCmd.Parse(os.Args[2:])
+		if err := edgesCmd.Parse(os.Args[2:]); err != nil {
+			fmt.Println("Usage: go-image-processor edges <input> <output>")
+			os.Exit(1)
+		}
 
 		if edgesCmd.NArg() < 2 {
 			fmt.Println("Usage: go-image-processor edges <input> <output>")

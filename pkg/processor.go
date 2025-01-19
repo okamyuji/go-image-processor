@@ -493,7 +493,9 @@ func BenchmarkResizeImage(b *testing.B) {
 	inputPath := "../examples/input.jpg"
 	outputPath := "../examples/output_resized.jpg"
 	for i := 0; i < b.N; i++ {
-		ResizeImage(inputPath, outputPath, 800, 600)
+		if err := ResizeImage(inputPath, outputPath, 800, 600); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
@@ -501,7 +503,9 @@ func BenchmarkDenoiseImage(b *testing.B) {
 	inputPath := "../examples/input.jpg"
 	outputPath := "../examples/output_denoised.jpg"
 	for i := 0; i < b.N; i++ {
-		DenoiseImage(inputPath, outputPath)
+		if err := DenoiseImage(inputPath, outputPath); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
@@ -509,7 +513,9 @@ func BenchmarkRotateImage(b *testing.B) {
 	inputPath := "../examples/input.jpg"
 	outputPath := "../examples/output_rotated.jpg"
 	for i := 0; i < b.N; i++ {
-		RotateImage(inputPath, outputPath, 90)
+		if err := RotateImage(inputPath, outputPath, 90); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
@@ -517,7 +523,9 @@ func BenchmarkBinarizeImage(b *testing.B) {
 	inputPath := "../examples/input.jpg"
 	outputPath := "../examples/output_binarized.jpg"
 	for i := 0; i < b.N; i++ {
-		BinarizeImage(inputPath, outputPath)
+		if err := BinarizeImage(inputPath, outputPath); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
@@ -525,7 +533,9 @@ func BenchmarkConcatenateImagesVertically(b *testing.B) {
 	inputPaths := []string{"../examples/input1.jpg", "../examples/input2.jpg"}
 	outputPath := "../examples/output_concat_vert.jpg"
 	for i := 0; i < b.N; i++ {
-		ConcatenateImagesVertically(inputPaths, outputPath)
+		if err := ConcatenateImagesVertically(inputPaths, outputPath); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
@@ -533,7 +543,9 @@ func BenchmarkConcatenateImagesHorizontally(b *testing.B) {
 	inputPaths := []string{"../examples/input1.jpg", "../examples/input2.jpg"}
 	outputPath := "../examples/output_concat_horz.jpg"
 	for i := 0; i < b.N; i++ {
-		ConcatenateImagesHorizontally(inputPaths, outputPath)
+		if err := ConcatenateImagesHorizontally(inputPaths, outputPath); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
