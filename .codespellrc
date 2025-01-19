@@ -1,0 +1,7 @@
+[codespell]
+#whitelist
+ignore-words-list = codespell,testdata,tmpl,goimports,staticcheck,golangci,okamyuji,Binarize,binarize
+
+#excluded files
+skip = .codespellrc,_typos.toml,go.sum,internal/app/templates/index.html,internal/app/static/js/app.js
+

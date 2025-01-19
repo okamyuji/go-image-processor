@@ -1,0 +1,19 @@
+[default]
+#words
+extend-ignore-words-re = [
+  #固有名詞
+
+  #false positive
+  "ba"
+
+  #許容
+  #typoだが原文をrespectしたい場合
+
+]
+
+#identifiers
+extend-ignore-identifiers-re = []
+
+#excluded files
+[files]
+extend-exclude = [".codespellrc"]
