@@ -66,6 +66,8 @@ func main() {
 			cmd = exec.Command("go-image-processor", "binarize", input, output)
 		case "edges":
 			cmd = exec.Command("go-image-processor", "edges", input, output)
+		case "autorotate":
+			cmd = exec.Command("go-image-processor", "autorotate", input, output)
 		}
 
 		cmdOutput, err := cmd.CombinedOutput()

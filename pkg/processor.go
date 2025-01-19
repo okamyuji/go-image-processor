@@ -465,7 +465,9 @@ func GenerateTestImage(outputDir string, width, height int) error {
 	slog.Info("generating test images",
 		"output_dir", outputDir,
 		"base_width", width,
-		"base_height", height)
+		"base_height", height,
+		"actual_width", width,
+		"actual_height", height)
 
 	// Create output directory if it doesn't exist
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
@@ -499,6 +501,28 @@ func GenerateTestImage(outputDir string, width, height int) error {
 			filepath.Join(outputDir, fmt.Sprintf("concat_test_%d.jpg", i+1)),
 			size[0], size[1], i); err != nil {
 			return err
+		}
+	}
+
+	// Generate skew test images with different angles
+	angles := []float64{5.0, 15.0, -10.0}
+
+	for i, angle := range angles {
+		skewPath := filepath.Join(outputDir, fmt.Sprintf("skew_test_%d.jpg", i+1))
+
+		if err := generateSkewTestImage(skewPath, width, height, angle); err != nil {
+			slog.Error("failed to generate skew test image",
+				"error", err,
+				"path", skewPath,
+				"angle", angle)
+			return err
+		}
+
+		// 生成後の確認
+		if _, err := os.Stat(skewPath); os.IsNotExist(err) {
+			slog.Error("skew test image was not created",
+				"path", skewPath)
+			return fmt.Errorf("failed to create skew test image: %s", skewPath)
 		}
 	}
 
@@ -632,6 +656,47 @@ func drawArrow(img *image.RGBA, x, y, dx, dy int) {
 	}
 }
 
+// generateSkewTestImage creates a test image with text-like patterns and grid lines
+func generateSkewTestImage(outputPath string, width, height int, angleInDegrees float64) error {
+	slog.Info("generating skew test image",
+		"path", outputPath,
+		"width", width,
+		"height", height,
+		"angle", angleInDegrees)
+
+	// テキストや線を含む画像を生成し、指定された角度で回転
+	img := image.NewRGBA(image.Rect(0, 0, width, height))
+
+	// 背景を白で塗りつぶし
+	draw.Draw(img, img.Bounds(), &image.Uniform{color.White}, image.Point{}, draw.Src)
+
+	// 水平線を描画（傾き検出用）
+	for y := height / 4; y < height*3/4; y += height / 4 {
+		for x := 0; x < width; x++ {
+			img.Set(x, y, color.Black)
+		}
+	}
+
+	// 垂直線も追加して格子パターンを作成
+	for x := width / 4; x < width*3/4; x += width / 4 {
+		for y := 0; y < height; y++ {
+			img.Set(x, y, color.Black)
+		}
+	}
+
+	// 回転処理
+	rotated := rotateImage(img, angleInDegrees)
+
+	// 出力ディレクトリの存在確認
+	dir := filepath.Dir(outputPath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("failed to create output directory: %v", err)
+	}
+
+	// ファイルに保存
+	return saveJPEG(outputPath, rotated)
+}
+
 // saveJPEG saves an image as JPEG
 func saveJPEG(outputPath string, img image.Image) error {
 	out, err := os.Create(outputPath)
@@ -642,6 +707,172 @@ func saveJPEG(outputPath string, img image.Image) error {
 
 	return jpeg.Encode(out, img, &jpeg.Options{Quality: cfg.JpegQuality})
 }
+
+// AutoRotateImage automatically detects and corrects image skew
+func AutoRotateImage(inputPath string, outputPath string) error {
+	// 1. 画像を読み込み
+	file, err := os.Open(inputPath)
+	if err != nil {
+		return &ErrInvalidInput{Path: inputPath}
+	}
+	defer file.Close()
+
+	img, _, err := image.Decode(file)
+	if err != nil {
+		return &ErrProcessing{Op: "decode", Err: err}
+	}
+
+	// 2. エッジを検出（Sobelオペレータを使用）
+	edges := detectEdges(img)
+
+	// 3. ハフ変換で直線を検出し、傾き角度を計算
+	angle := detectSkewAngle(edges)
+
+	// 4. 検出した角度で画像を回転
+	rotated := rotateImage(img, -angle) // 逆方向に回転して補正
+
+	// 5. 出力ファイルを作成
+	out, err := os.Create(outputPath)
+	if err != nil {
+		return &ErrInvalidOutput{Path: outputPath}
+	}
+	defer out.Close()
+
+	// 6. 補正した画像を保存
+	if err := jpeg.Encode(out, rotated, &jpeg.Options{Quality: cfg.JpegQuality}); err != nil {
+		return &ErrProcessing{Op: "encode", Err: err}
+	}
+
+	return nil
+}
+
+// detectSkewAngle detects the skew angle of the image using Hough transform
+func detectSkewAngle(edges *image.Gray) float64 {
+	bounds := edges.Bounds()
+	width, height := bounds.Dx(), bounds.Dy()
+
+	// Initialize the parameter space for Hough transform
+	angleRange := 180
+	rhoRange := int(math.Sqrt(float64(width*width + height*height)))
+	accumulator := make([][]int, angleRange)
+	for i := range accumulator {
+		accumulator[i] = make([]int, rhoRange*2)
+	}
+
+	// Apply Hough transform to edge points
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			if edges.GrayAt(x, y).Y > 127 {
+				for theta := 0; theta < angleRange; theta++ {
+					angle := float64(theta) * math.Pi / 180.0
+					rho := float64(x)*math.Cos(angle) + float64(y)*math.Sin(angle)
+					rhoIndex := int(rho) + rhoRange
+					if rhoIndex >= 0 && rhoIndex < rhoRange*2 {
+						accumulator[theta][rhoIndex]++
+					}
+				}
+			}
+		}
+	}
+
+	// Find the angle of the strongest line
+	maxVotes := 0
+	dominantAngle := 0.0
+	for theta := 0; theta < angleRange; theta++ {
+		for rho := 0; rho < rhoRange*2; rho++ {
+			if accumulator[theta][rho] > maxVotes {
+				maxVotes = accumulator[theta][rho]
+				dominantAngle = float64(theta)
+			}
+		}
+	}
+
+	// Return the skew angle relative to 90 degrees
+	if dominantAngle > 90 {
+		dominantAngle -= 180
+	}
+	return dominantAngle
+}
+
+// rotateImage rotates the image by the specified angle in degrees
+func rotateImage(img image.Image, angle float64) image.Image {
+	// Convert angle to radians
+	radians := angle * math.Pi / 180
+
+	// Calculate new image size
+	bounds := img.Bounds()
+	w, h := bounds.Max.X, bounds.Max.Y
+	newW, newH := rotatedSize(w, h, radians)
+
+	// Create a new image with the rotated size
+	rotated := image.NewRGBA(image.Rect(0, 0, newW, newH))
+
+	// Rotate the image
+	centerX, centerY := float64(w)/2, float64(h)/2
+	newCenterX, newCenterY := float64(newW)/2, float64(newH)/2
+
+	for y := 0; y < newH; y++ {
+		for x := 0; x < newW; x++ {
+			// Translate to origin
+			xr := float64(x) - newCenterX
+			yr := float64(y) - newCenterY
+
+			// Rotate
+			xr, yr = rotatePoint(xr, yr, -radians)
+
+			// Translate back
+			xr += centerX
+			yr += centerY
+
+			// If the point is within the original image, copy the color
+			if xr >= 0 && xr < float64(w) && yr >= 0 && yr < float64(h) {
+				rotated.Set(x, y, img.At(int(xr), int(yr)))
+			}
+		}
+	}
+
+	return rotated
+}
+
+// detectEdges converts the image to grayscale and applies Sobel edge detection
+func detectEdges(img image.Image) *image.Gray {
+	bounds := img.Bounds()
+	grayImg := image.NewGray(bounds)
+
+	// Convert to grayscale
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			grayImg.Set(x, y, color.GrayModel.Convert(img.At(x, y)))
+		}
+	}
+
+	// Apply Sobel operator
+	edges := image.NewGray(bounds)
+	for y := bounds.Min.Y + 1; y < bounds.Max.Y-1; y++ {
+		for x := bounds.Min.X + 1; x < bounds.Max.X-1; x++ {
+			// Sobel kernels
+			gx := float64(-1)*float64(grayImg.GrayAt(x-1, y-1).Y) +
+				float64(1)*float64(grayImg.GrayAt(x+1, y-1).Y) +
+				float64(-2)*float64(grayImg.GrayAt(x-1, y).Y) +
+				float64(2)*float64(grayImg.GrayAt(x+1, y).Y) +
+				float64(-1)*float64(grayImg.GrayAt(x-1, y+1).Y) +
+				float64(1)*float64(grayImg.GrayAt(x+1, y+1).Y)
+
+			gy := float64(-1)*float64(grayImg.GrayAt(x-1, y-1).Y) +
+				float64(1)*float64(grayImg.GrayAt(x-1, y+1).Y) +
+				float64(-2)*float64(grayImg.GrayAt(x, y-1).Y) +
+				float64(2)*float64(grayImg.GrayAt(x, y+1).Y) +
+				float64(-1)*float64(grayImg.GrayAt(x+1, y-1).Y) +
+				float64(1)*float64(grayImg.GrayAt(x+1, y+1).Y)
+
+			magnitude := math.Sqrt(gx*gx + gy*gy)
+			edges.Set(x, y, color.Gray{Y: uint8(math.Min(magnitude, 255))})
+		}
+	}
+
+	return edges
+}
+
 func BenchmarkResizeImage(b *testing.B) {
 	inputPath := "../examples/input.jpg"
 	outputPath := "../examples/output_resized.jpg"

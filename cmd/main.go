@@ -25,13 +25,14 @@ func init() {
 func printUsage() {
 	fmt.Println("Usage: go-image-processor <command> [arguments]")
 	fmt.Println("\nCommands:")
-	fmt.Println("  resize <input> <output> -width <width> -height <height>")
+	fmt.Println("  resize -width <width> -height <height> <input> <output>")
 	fmt.Println("  denoise <input> <output>")
-	fmt.Println("  rotate <input> <output> -angle <angle>")
+	fmt.Println("  rotate -angle <angle> <input> <output>")
+	fmt.Println("  autorotate <input> <output>")
 	fmt.Println("  binarize <input> <output>")
 	fmt.Println("  concatvert <output> <input1> <input2> [input3...]")
 	fmt.Println("  concathorz <output> <input1> <input2> [input3...]")
-	fmt.Println("  generatetest <output> -width <width> -height <height>")
+	fmt.Println("  generatetest -width <width> -height <height> <output>")
 	fmt.Println("\nUse 'go-image-processor <command> -h' for more information about a command.")
 }
 
@@ -72,7 +73,14 @@ func main() {
 			fmt.Println("Usage: go-image-processor resize <input> <output> -width <width> -height <height>")
 			os.Exit(1)
 		}
-
+		if resizeCmd.NArg() < 2 || *width == 0 || *height == 0 {
+			fmt.Println("Usage: go-image-processor resize <input> <output> -width <width> -height <height>")
+			os.Exit(1)
+		}
+		if err := resizeCmd.Parse(os.Args[2:]); err != nil {
+			fmt.Println("Usage: go-image-processor resize <input> <output> -width <width> -height <height>")
+			os.Exit(1)
+		}
 		if resizeCmd.NArg() < 2 || *width == 0 || *height == 0 {
 			fmt.Println("Usage: go-image-processor resize <input> <output> -width <width> -height <height>")
 			os.Exit(1)
@@ -90,12 +98,10 @@ func main() {
 			fmt.Println("Usage: go-image-processor denoise <input> <output>")
 			os.Exit(1)
 		}
-
 		if denoiseCmd.NArg() < 2 {
 			fmt.Println("Usage: go-image-processor denoise <input> <output>")
 			os.Exit(1)
 		}
-
 		err := processor.DenoiseImage(denoiseCmd.Arg(0), denoiseCmd.Arg(1))
 		if err != nil {
 			handleError(err)
@@ -109,7 +115,10 @@ func main() {
 			fmt.Println("Usage: go-image-processor rotate <input> <output> -angle <angle>")
 			os.Exit(1)
 		}
-
+		if rotateCmd.NArg() < 2 || *angle == 0 {
+			fmt.Println("Usage: go-image-processor rotate <input> <output> -angle <angle>")
+			os.Exit(1)
+		}
 		if rotateCmd.NArg() < 2 || *angle == 0 {
 			fmt.Println("Usage: go-image-processor rotate <input> <output> -angle <angle>")
 			os.Exit(1)
@@ -120,7 +129,22 @@ func main() {
 			handleError(err)
 		}
 		fmt.Println("Image rotated successfully")
+	case "autorotate":
+		autoRotateCmd := flag.NewFlagSet("autorotate", flag.ExitOnError)
+		if err := autoRotateCmd.Parse(os.Args[2:]); err != nil {
+			fmt.Println("Usage: go-image-processor autorotate <input> <output>")
+			os.Exit(1)
+		}
+		if autoRotateCmd.NArg() < 2 {
+			fmt.Println("Usage: go-image-processor autorotate <input> <output>")
+			os.Exit(1)
+		}
 
+		err := processor.AutoRotateImage(autoRotateCmd.Arg(0), autoRotateCmd.Arg(1))
+		if err != nil {
+			handleError(err)
+		}
+		fmt.Println("Image auto-rotated successfully")
 	case "binarize":
 		binarizeCmd := flag.NewFlagSet("binarize", flag.ExitOnError)
 		if err := binarizeCmd.Parse(os.Args[2:]); err != nil {
@@ -184,6 +208,10 @@ func main() {
 		width := generateTestCmd.Int("width", 100, "Width of the test image")
 		height := generateTestCmd.Int("height", 100, "Height of the test image")
 		if err := generateTestCmd.Parse(os.Args[2:]); err != nil {
+			fmt.Println("Usage: go-image-processor generatetest <output> -width <width> -height <height>")
+			os.Exit(1)
+		}
+		if generateTestCmd.NArg() < 1 || *width == 0 || *height == 0 {
 			fmt.Println("Usage: go-image-processor generatetest <output> -width <width> -height <height>")
 			os.Exit(1)
 		}
