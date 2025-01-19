@@ -308,6 +308,17 @@ This feature finds and highlights the outlines in your image!
 
 Example: Making a sketch-like version of a photo, showing just the main shapes.
 
+### Auto-rotate Image (Skew Correction)
+
+This feature automatically detects and corrects tilted images!
+
+1. Analyzes the image to find strong lines or text
+2. Calculates how much the image is tilted
+3. Rotates the image to make it straight
+4. Saves the corrected image
+
+Example: Fixing a scanned document that was placed slightly crooked.
+
 ### Test Image Generation
 
 Need sample images to practice with? This feature creates them!
