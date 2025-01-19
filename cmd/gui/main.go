@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"os"
 	"os/exec"
+	"path/filepath"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -30,7 +33,7 @@ func main() {
 	angleEntry := widget.NewEntry()
 	angleEntry.SetPlaceHolder("Angle")
 
-	operationSelect := widget.NewSelect([]string{"resize", "rotate", "denoise", "binarize", "edges"}, func(value string) {})
+	operationSelect := widget.NewSelect([]string{"resize", "rotate", "denoise", "binarize", "edges", "autorotate"}, func(value string) {})
 
 	processButton := widget.NewButton("Process", func() {
 		operation := operationSelect.Selected
@@ -43,7 +46,11 @@ func main() {
 		}
 
 		var cmd *exec.Cmd
-
+		currentDir, err := os.Getwd()
+		if err != nil {
+			log.Fatal(err)
+		}
+		execPath := filepath.Join(currentDir, "./go-image-processor")
 		switch operation {
 		case "resize":
 			width := widthEntry.Text
@@ -52,22 +59,22 @@ func main() {
 				dialog.ShowError(fmt.Errorf("please specify width and height for resize operation"), w)
 				return
 			}
-			cmd = exec.Command("go-image-processor", "resize", input, output, "-width", width, "-height", height)
+			cmd = exec.Command(execPath, "resize", input, output, "-width", width, "-height", height)
 		case "rotate":
 			angle := angleEntry.Text
 			if angle == "" {
 				dialog.ShowError(fmt.Errorf("please specify angle for rotate operation"), w)
 				return
 			}
-			cmd = exec.Command("go-image-processor", "rotate", input, output, "-angle", angle)
+			cmd = exec.Command(execPath, "rotate", input, output, "-angle", angle)
 		case "denoise":
-			cmd = exec.Command("go-image-processor", "denoise", input, output)
+			cmd = exec.Command(execPath, "denoise", input, output)
 		case "binarize":
-			cmd = exec.Command("go-image-processor", "binarize", input, output)
+			cmd = exec.Command(execPath, "binarize", input, output)
 		case "edges":
-			cmd = exec.Command("go-image-processor", "edges", input, output)
+			cmd = exec.Command(execPath, "edges", input, output)
 		case "autorotate":
-			cmd = exec.Command("go-image-processor", "autorotate", input, output)
+			cmd = exec.Command(execPath, "autorotate", input, output)
 		}
 
 		cmdOutput, err := cmd.CombinedOutput()
