@@ -1,25 +1,25 @@
 #!/usr/bin/env bash
 
 if [[ $# != 0 ]]; then
-    echo '[用法]
+    echo '[Usage]
 ./lint.sh
 
-[オプション]
--h/--help    #このヘルプを表示する
+[Options]
+-h/--help    #Display this help message
 
-[終了ステータス]
-0: コマンド全体が成功したとき
-1: そうでないとき
+[Exit Status]
+0: Command completed successfully
+1: Command failed
 
-[仕様]
-- `goimports`で検出されたエラーは自動修正されますが、`git add`は手動で必要です
-  (終了ステータスの判定上は、自動修正が成功すれば「成功」と見なされます)
+[Specifications]
+- Errors detected by `goimports` will be automatically fixed, but `git add` must be done manually
+  (For exit status purposes, successful auto-fixing is considered "success")
 
-- そのほかのエラーは自動修正されないため、手動で修正が必要です
+- Other errors are not automatically fixed and require manual correction
 
-- `typos`でfalse positiveがあった場合、`_typos.toml`を編集してください
+- If you encounter false positives in `typos`, please edit `_typos.toml`
 
-- `codespell`でfalse positiveがあった場合、`.codespellrc`を編集してください'
+- If you encounter false positives in `codespell`, please edit `.codespellrc`'
 
     exit 0
 fi
@@ -37,7 +37,7 @@ function check_command_existence() {
         local does_command_exist=1
         command -v "${command}" > /dev/null || does_command_exist=0
         if [[ "${does_command_exist}" == 0 ]]; then
-            echo "コマンド\`${command}\`がインストールされていません"
+            echo "Command \`${command}\` is not installed"
             exit_status=1
         fi
     done

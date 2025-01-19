@@ -15,7 +15,6 @@ func init() {
 	log.SetPrefix("go-image-processor: ")
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 	_ = config.GetConfig()
-	// JSONフォーマットのロガーを設定
 	logger := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{
 		Level: slog.LevelInfo,
 	}))

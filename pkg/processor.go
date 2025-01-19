@@ -23,7 +23,6 @@ var cfg *config.Config
 
 func init() {
 	cfg = config.GetConfig()
-	// JSONフォーマットのロガーを設定
 	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
 	slog.SetDefault(logger)
 }
@@ -455,9 +454,6 @@ func ConcatenateImagesHorizontally(inputPaths []string, outputPath string) error
 	return nil
 }
 
-// GenerateTestImage creates a test image with random colored pixels.
-// It takes the output file path and the desired width and height of the image.
-// Returns an error if the operation fails.
 // GenerateTestImage creates various test images suitable for image processing tests.
 // It takes the output directory path and base dimensions.
 // Returns an error if any operation fails.
@@ -664,36 +660,36 @@ func generateSkewTestImage(outputPath string, width, height int, angleInDegrees 
 		"height", height,
 		"angle", angleInDegrees)
 
-	// テキストや線を含む画像を生成し、指定された角度で回転
+	// Generate test image with text and lines, rotate by specified angle
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
 
-	// 背景を白で塗りつぶし
+	// Fill background with white color
 	draw.Draw(img, img.Bounds(), &image.Uniform{color.White}, image.Point{}, draw.Src)
 
-	// 水平線を描画（傾き検出用）
+	// Draw horizontal lines (for skew detection)
 	for y := height / 4; y < height*3/4; y += height / 4 {
 		for x := 0; x < width; x++ {
 			img.Set(x, y, color.Black)
 		}
 	}
 
-	// 垂直線も追加して格子パターンを作成
+	// Add vertical lines to create grid pattern
 	for x := width / 4; x < width*3/4; x += width / 4 {
 		for y := 0; y < height; y++ {
 			img.Set(x, y, color.Black)
 		}
 	}
 
-	// 回転処理
+	// Apply rotation
 	rotated := rotateImage(img, angleInDegrees)
 
-	// 出力ディレクトリの存在確認
+	// Check if output directory exists
 	dir := filepath.Dir(outputPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("failed to create output directory: %v", err)
 	}
 
-	// ファイルに保存
+	// Save to file
 	return saveJPEG(outputPath, rotated)
 }
 
@@ -710,7 +706,7 @@ func saveJPEG(outputPath string, img image.Image) error {
 
 // AutoRotateImage automatically detects and corrects image skew
 func AutoRotateImage(inputPath string, outputPath string) error {
-	// 1. 画像を読み込み
+	// 1. Load the input image
 	file, err := os.Open(inputPath)
 	if err != nil {
 		return &ErrInvalidInput{Path: inputPath}
@@ -722,23 +718,23 @@ func AutoRotateImage(inputPath string, outputPath string) error {
 		return &ErrProcessing{Op: "decode", Err: err}
 	}
 
-	// 2. エッジを検出（Sobelオペレータを使用）
+	// 2. Detect edges using Sobel operator
 	edges := detectEdges(img)
 
-	// 3. ハフ変換で直線を検出し、傾き角度を計算
+	// 3. Detect lines using Hough transform and calculate skew angle
 	angle := detectSkewAngle(edges)
 
-	// 4. 検出した角度で画像を回転
-	rotated := rotateImage(img, -angle) // 逆方向に回転して補正
+	// 4. Rotate image by the detected angle
+	rotated := rotateImage(img, -angle) // Apply counter-rotation for correction
 
-	// 5. 出力ファイルを作成
+	// 5. Create output file
 	out, err := os.Create(outputPath)
 	if err != nil {
 		return &ErrInvalidOutput{Path: outputPath}
 	}
 	defer out.Close()
 
-	// 6. 補正した画像を保存
+	// 6. Save the corrected image
 	if err := jpeg.Encode(out, rotated, &jpeg.Options{Quality: cfg.JpegQuality}); err != nil {
 		return &ErrProcessing{Op: "encode", Err: err}
 	}

@@ -1,13 +1,13 @@
 [default]
 #words
 extend-ignore-words-re = [
-  #固有名詞
+  #Proper nouns
 
-  #false positive
+  #False positives
   "ba"
 
-  #許容
-  #typoだが原文をrespectしたい場合
+  #Exceptions
+  #Cases where we want to respect the original text despite typos
 
 ]
 
